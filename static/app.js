@@ -1,13 +1,32 @@
 // Fireplace Control App
 
 let statusInterval;
+let isConnected = false;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
+    setConnectionState(false);  // Start disconnected until we confirm connection
     refreshStatus();
     loadApiKeys();
     statusInterval = setInterval(refreshStatus, 5000);
 });
+
+// Connection state management
+function setConnectionState(connected) {
+    isConnected = connected;
+    const banner = document.getElementById('connection-banner');
+    const container = document.querySelector('.container');
+
+    if (connected) {
+        banner.classList.remove('disconnected');
+        banner.classList.add('connected');
+        container.classList.remove('disconnected-state');
+    } else {
+        banner.classList.add('disconnected');
+        banner.classList.remove('connected');
+        container.classList.add('disconnected-state');
+    }
+}
 
 // API helper
 async function api(method, endpoint, body = null) {
@@ -36,6 +55,8 @@ async function refreshStatus() {
     try {
         const status = await api('GET', '/api/status');
 
+        setConnectionState(true);
+
         document.getElementById('status-power').textContent = status.power ? 'ON' : 'OFF';
         document.getElementById('status-power').className = 'value ' + (status.power ? 'on' : 'off');
 
@@ -55,7 +76,17 @@ async function refreshStatus() {
             document.getElementById('flame-value').textContent = status.flame_level;
         }
     } catch (error) {
-        document.getElementById('status-message').textContent = 'Unable to connect to fireplace';
+        setConnectionState(false);
+
+        // Reset status values to show disconnected state
+        document.getElementById('status-power').textContent = '--';
+        document.getElementById('status-power').className = 'value';
+        document.getElementById('status-flame').textContent = '--';
+        document.getElementById('status-burner2').textContent = '--';
+        document.getElementById('status-burner2').className = 'value';
+        document.getElementById('status-pilot').textContent = '--';
+        document.getElementById('status-pilot').className = 'value';
+        document.getElementById('status-message').textContent = '';
     }
 }
 

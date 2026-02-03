@@ -59,6 +59,33 @@ h3 {
     display: inline;
 }
 
+/* Connection Banner */
+.connection-banner {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.connection-banner.disconnected {
+    display: flex;
+    background: rgba(220, 53, 69, 0.2);
+    border: 1px solid #dc3545;
+    color: #ff6b6b;
+}
+
+.connection-banner.connected {
+    display: none;
+}
+
+.connection-icon {
+    font-size: 1.2rem;
+}
+
 /* Buttons */
 .btn {
     padding: 10px 20px;
@@ -348,4 +375,14 @@ h3 {
     .create-key-form {
         flex-direction: column;
     }
+}
+
+/* Disconnected state - must be at end for specificity */
+.container.disconnected-state .controls-section {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.container.disconnected-state .status-item .value {
+    color: #666;
 }
