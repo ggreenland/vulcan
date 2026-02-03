@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulcan</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Vulcan</h1>
+            {% if user %}
+            <div class="user-info">
+                {% if user.picture %}
+                <img src="{{ user.picture }}" alt="Profile" class="avatar">
+                {% endif %}
+                <span>{{ user.name or user.email }}</span>
+                <form action="/auth/logout" method="post" class="logout-form">
+                    <button type="submit" class="btn btn-small">Logout</button>
+                </form>
+            </div>
+            {% endif %}
+        </header>
+
+        {% if not user %}
+        <div class="login-section">
+            <p>Sign in to control your fireplace</p>
+            <a href="/auth/login" class="btn btn-google">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Sign in with Google
+            </a>
+        </div>
+        {% else %}
+
+        <div class="status-section" id="status-section">
+            <h2>Status</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="label">Power</span>
+                    <span class="value" id="status-power">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Flame Level</span>
+                    <span class="value" id="status-flame">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Burner 2</span>
+                    <span class="value" id="status-burner2">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Pilot</span>
+                    <span class="value" id="status-pilot">--</span>
+                </div>
+            </div>
+            <p class="status-message" id="status-message"></p>
+        </div>
+
+        <div class="controls-section">
+            <h2>Controls</h2>
+
+            <div class="control-group">
+                <label>Power</label>
+                <div class="btn-group">
+                    <button class="btn btn-on" onclick="powerOn()">Turn On</button>
+                    <button class="btn btn-off" onclick="powerOff()">Turn Off</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Flame Level: <span id="flame-value">50</span>%</label>
+                <input type="range" id="flame-slider" min="0" max="100" value="50"
+                       oninput="updateFlameDisplay(this.value)" onchange="setFlameLevel(this.value)">
+            </div>
+
+            <div class="control-group">
+                <label>Burner 2</label>
+                <div class="btn-group">
+                    <button class="btn" onclick="burner2On()">Enable</button>
+                    <button class="btn" onclick="burner2Off()">Disable</button>
+                </div>
+            </div>
+        </div>
+
+        {% if enable_api_keys %}
+        <div class="api-keys-section">
+            <h2>API Keys</h2>
+            <p class="help-text">Use API keys to control the fireplace from scripts or automations.</p>
+
+            <div class="create-key-form">
+                <input type="text" id="key-name" placeholder="Key name (e.g., Home Assistant)">
+                <button class="btn" onclick="createApiKey()">Generate Key</button>
+            </div>
+
+            <div id="new-key-display" class="new-key-display" style="display: none;">
+                <p><strong>New API Key Created!</strong></p>
+                <code id="new-key-value"></code>
+                <p class="warning">Copy this key now - it won't be shown again!</p>
+                <button class="btn btn-small" onclick="copyKey()">Copy to Clipboard</button>
+            </div>
+
+            <div id="api-keys-list" class="api-keys-list">
+                <p>Loading keys...</p>
+            </div>
+
+            <div class="api-usage">
+                <h3>API Usage</h3>
+                <pre><code>curl -X POST \
+  -H "X-API-Key: YOUR_KEY" \
+  https://yourdomain.duckdns.org/api/power/on</code></pre>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+
+    {% if user %}
+    <script src="/static/app.js"></script>
+    {% endif %}
+</body>
+</html>
