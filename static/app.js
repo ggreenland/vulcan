@@ -16,15 +16,50 @@ function setConnectionState(connected) {
     isConnected = connected;
     const banner = document.getElementById('connection-banner');
     const container = document.querySelector('.container');
+    const fireplace = document.getElementById('pixel-fireplace');
 
     if (connected) {
         banner.classList.remove('disconnected');
         banner.classList.add('connected');
         container.classList.remove('disconnected-state');
+        fireplace.classList.remove('disconnected');
     } else {
         banner.classList.add('disconnected');
         banner.classList.remove('connected');
         container.classList.add('disconnected-state');
+        fireplace.classList.add('disconnected');
+        // Turn off fireplace visual when disconnected
+        updateFireplaceVisual(false, 0, false, false);
+    }
+}
+
+// Pixel fireplace visual state
+function updateFireplaceVisual(power, flameLevel, pilot, burner2) {
+    const fireplace = document.getElementById('pixel-fireplace');
+    const pilotLight = document.getElementById('pilot-light');
+
+    // Power state (flames visible)
+    if (power) {
+        fireplace.classList.add('on');
+        // Set flame height based on level (0.3 min to 1.0 max for visual appeal)
+        const flameHeight = 0.3 + (flameLevel / 100) * 0.7;
+        fireplace.style.setProperty('--flame-height', flameHeight);
+    } else {
+        fireplace.classList.remove('on');
+    }
+
+    // Burner 2 state
+    if (burner2) {
+        fireplace.classList.add('burner2-on');
+    } else {
+        fireplace.classList.remove('burner2-on');
+    }
+
+    // Pilot light
+    if (pilot) {
+        pilotLight.classList.add('on');
+    } else {
+        pilotLight.classList.remove('on');
     }
 }
 
@@ -70,6 +105,9 @@ async function refreshStatus() {
 
         document.getElementById('status-message').textContent = '';
 
+        // Update pixel fireplace visual
+        updateFireplaceVisual(status.power, status.flame_level, status.pilot, status.burner2);
+
         // Update slider if power is on
         if (status.power) {
             document.getElementById('flame-slider').value = status.flame_level;
@@ -114,6 +152,12 @@ async function powerOff() {
 // Flame level
 function updateFlameDisplay(value) {
     document.getElementById('flame-value').textContent = value;
+    // Update pixel fireplace flames in real-time as slider moves
+    const fireplace = document.getElementById('pixel-fireplace');
+    if (fireplace.classList.contains('on')) {
+        const flameHeight = 0.3 + (value / 100) * 0.7;
+        fireplace.style.setProperty('--flame-height', flameHeight);
+    }
 }
 
 async function setFlameLevel(level) {
@@ -169,7 +213,7 @@ async function loadApiKeys() {
             </div>
         `).join('');
     } catch (error) {
-        document.getElementById('api-keys-list').innerHTML = '<p style="color: #dc3545;">Failed to load API keys</p>';
+        // API keys endpoint not available (ENABLE_API_KEYS=false)
     }
 }
 

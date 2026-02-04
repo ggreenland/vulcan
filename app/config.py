@@ -14,6 +14,7 @@ class Config:
     # Fireplace
     FIREPLACE_IP: str = os.getenv("FIREPLACE_IP", "192.168.0.22")
     FIREPLACE_PORT: int = int(os.getenv("FIREPLACE_PORT", "2000"))
+    FIREPLACE_CONTROLLER: str = os.getenv("FIREPLACE_CONTROLLER", "real")  # "real" or "simulated"
 
     # Google OAuth
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")

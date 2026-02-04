@@ -1,13 +1,13 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from app.config import config
 from app import database, auth
-from app.fireplace import fireplace
+from app.controller import FireplaceController, get_controller
 
 
 @asynccontextmanager
@@ -119,15 +119,20 @@ async def logout(request: Request):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "dev_mode": config.DEV_MODE}
+    return {
+        "status": "ok",
+        "controller": config.FIREPLACE_CONTROLLER,
+    }
 
 
 # ---------- Test Endpoints (DEV_MODE only) ----------
 
 if config.DEV_MODE:
+    from app.fireplace import fireplace
+
     @app.get("/test/status")
     async def test_status():
-        """Test endpoint - no auth required. Only available in DEV_MODE."""
+        """Test endpoint - no auth, direct fireplace access. DEV_MODE only."""
         try:
             status = await fireplace.get_status()
             return {
@@ -144,7 +149,7 @@ if config.DEV_MODE:
 
     @app.post("/test/flame/{level}")
     async def test_flame(level: int):
-        """Test endpoint - no auth required. Only available in DEV_MODE."""
+        """Test endpoint - no auth, direct fireplace access. DEV_MODE only."""
         if not 0 <= level <= 100:
             raise HTTPException(status_code=400, detail="Level must be 0-100")
         success = await fireplace.set_flame_level(level)
@@ -154,7 +159,7 @@ if config.DEV_MODE:
 
     @app.post("/test/burner2/{state}")
     async def test_burner2(state: str):
-        """Test endpoint - no auth required. Only available in DEV_MODE."""
+        """Test endpoint - no auth, direct fireplace access. DEV_MODE only."""
         if state == "on":
             success = await fireplace.burner2_on()
         elif state == "off":
@@ -170,9 +175,12 @@ if config.DEV_MODE:
 
 
 @app.get("/api/status")
-async def get_status(user: dict = Depends(auth.require_auth)):
+async def get_status(
+    user: dict = Depends(auth.require_auth),
+    controller: FireplaceController = Depends(get_controller),
+):
     try:
-        status = await fireplace.get_status()
+        status = await controller.get_status()
         return {
             "power": status.power,
             "flame_level": status.flame_level,
@@ -189,16 +197,22 @@ async def get_status(user: dict = Depends(auth.require_auth)):
 
 
 @app.post("/api/power/on")
-async def power_on(user: dict = Depends(auth.require_auth)):
-    success = await fireplace.power_on()
+async def power_on(
+    user: dict = Depends(auth.require_auth),
+    controller: FireplaceController = Depends(get_controller),
+):
+    success = await controller.power_on()
     if success:
         return {"status": "ok", "message": "Fireplace turning on"}
     raise HTTPException(status_code=500, detail="Failed to turn on fireplace")
 
 
 @app.post("/api/power/off")
-async def power_off(user: dict = Depends(auth.require_auth)):
-    success = await fireplace.power_off()
+async def power_off(
+    user: dict = Depends(auth.require_auth),
+    controller: FireplaceController = Depends(get_controller),
+):
+    success = await controller.power_off()
     if success:
         return {"status": "ok", "message": "Fireplace turning off"}
     raise HTTPException(status_code=500, detail="Failed to turn off fireplace")
@@ -207,16 +221,16 @@ async def power_off(user: dict = Depends(auth.require_auth)):
 # ---------- Flame Control ----------
 
 
-class FlameLevelRequest(BaseModel):
-    level: int
-
-
 @app.post("/api/flame/{level}")
-async def set_flame(level: int, user: dict = Depends(auth.require_auth)):
+async def set_flame(
+    level: int,
+    user: dict = Depends(auth.require_auth),
+    controller: FireplaceController = Depends(get_controller),
+):
     if not 0 <= level <= 100:
         raise HTTPException(status_code=400, detail="Level must be 0-100")
 
-    success = await fireplace.set_flame_level(level)
+    success = await controller.set_flame_level(level)
     if success:
         return {"status": "ok", "flame_level": level}
     raise HTTPException(status_code=500, detail="Failed to set flame level")
@@ -226,16 +240,22 @@ async def set_flame(level: int, user: dict = Depends(auth.require_auth)):
 
 
 @app.post("/api/burner2/on")
-async def burner2_on(user: dict = Depends(auth.require_auth)):
-    success = await fireplace.burner2_on()
+async def burner2_on(
+    user: dict = Depends(auth.require_auth),
+    controller: FireplaceController = Depends(get_controller),
+):
+    success = await controller.burner2_on()
     if success:
         return {"status": "ok", "burner2": True}
     raise HTTPException(status_code=500, detail="Failed to enable burner2")
 
 
 @app.post("/api/burner2/off")
-async def burner2_off(user: dict = Depends(auth.require_auth)):
-    success = await fireplace.burner2_off()
+async def burner2_off(
+    user: dict = Depends(auth.require_auth),
+    controller: FireplaceController = Depends(get_controller),
+):
+    success = await controller.burner2_off()
     if success:
         return {"status": "ok", "burner2": False}
     raise HTTPException(status_code=500, detail="Failed to disable burner2")
