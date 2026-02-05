@@ -9,9 +9,43 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshStatus();
     loadApiKeys();
     statusInterval = setInterval(refreshStatus, 5000);
+    initDropdown();
 });
 
-// Connection state management
+// ==========================================
+// User Menu Dropdown
+// ==========================================
+
+function initDropdown() {
+    const toggle = document.getElementById('user-menu-toggle');
+    const dropdown = document.getElementById('user-dropdown');
+    if (!toggle || !dropdown) return;
+
+    toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = dropdown.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', isOpen);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target) && e.target !== toggle) {
+            dropdown.classList.remove('open');
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            dropdown.classList.remove('open');
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+    });
+}
+
+// ==========================================
+// Connection State
+// ==========================================
+
 function setConnectionState(connected) {
     isConnected = connected;
     const banner = document.getElementById('connection-banner');
@@ -33,7 +67,10 @@ function setConnectionState(connected) {
     }
 }
 
-// Pixel fireplace visual state
+// ==========================================
+// Pixel Fireplace Visual
+// ==========================================
+
 function updateFireplaceVisual(power, flameLevel, pilot, burner2) {
     const fireplace = document.getElementById('pixel-fireplace');
     const pilotLight = document.getElementById('pilot-light');
@@ -63,7 +100,10 @@ function updateFireplaceVisual(power, flameLevel, pilot, burner2) {
     }
 }
 
-// API helper
+// ==========================================
+// API Helper
+// ==========================================
+
 async function api(method, endpoint, body = null) {
     const options = {
         method,
@@ -85,7 +125,50 @@ async function api(method, endpoint, body = null) {
     return response.json();
 }
 
+// ==========================================
 // Status
+// ==========================================
+
+function updateIndicator(id, isOn, isPilot) {
+    const indicator = document.getElementById('indicator-' + id);
+    const item = document.getElementById('status-item-' + id);
+    if (!indicator || !item) return;
+
+    indicator.classList.remove('on', 'pilot-on', 'flashing');
+    if (isOn) {
+        indicator.classList.add(isPilot ? 'pilot-on' : 'on');
+        item.classList.add('active');
+    } else {
+        item.classList.remove('active');
+    }
+}
+
+function resetIndicators() {
+    ['power', 'flame', 'burner2', 'pilot'].forEach(id => {
+        const indicator = document.getElementById('indicator-' + id);
+        const item = document.getElementById('status-item-' + id);
+        if (indicator) indicator.classList.remove('on', 'pilot-on');
+        if (item) item.classList.remove('active');
+    });
+}
+
+function updateToggles(status) {
+    const powerToggle = document.getElementById('power-toggle');
+    const powerLabel = document.getElementById('power-toggle-label');
+    const burner2Toggle = document.getElementById('burner2-toggle');
+    const burner2Label = document.getElementById('burner2-toggle-label');
+
+    if (powerToggle) {
+        powerToggle.setAttribute('aria-checked', status.power ? 'true' : 'false');
+        powerLabel.textContent = status.power ? 'ON' : 'OFF';
+    }
+
+    if (burner2Toggle) {
+        burner2Toggle.setAttribute('aria-checked', status.burner2 ? 'true' : 'false');
+        burner2Label.textContent = status.burner2 ? 'ON' : 'OFF';
+    }
+}
+
 async function refreshStatus() {
     try {
         const status = await api('GET', '/api/status');
@@ -104,6 +187,15 @@ async function refreshStatus() {
         document.getElementById('status-pilot').className = 'value ' + (status.pilot ? 'on' : 'off');
 
         document.getElementById('status-message').textContent = '';
+
+        // Update indicators
+        updateIndicator('power', status.power, false);
+        updateIndicator('flame', status.power, false);
+        updateIndicator('burner2', status.burner2, false);
+        updateIndicator('pilot', status.pilot, true);
+
+        // Update toggles
+        updateToggles(status);
 
         // Update pixel fireplace visual
         updateFireplaceVisual(status.power, status.flame_level, status.pilot, status.burner2);
@@ -125,31 +217,57 @@ async function refreshStatus() {
         document.getElementById('status-pilot').textContent = '--';
         document.getElementById('status-pilot').className = 'value';
         document.getElementById('status-message').textContent = '';
+
+        // Reset indicators and toggles
+        resetIndicators();
+        updateToggles({ power: false, burner2: false });
     }
 }
 
-// Power controls
-async function powerOn() {
+// ==========================================
+// Toggle Controls
+// ==========================================
+
+async function togglePower() {
+    const toggle = document.getElementById('power-toggle');
+    const isOn = toggle.getAttribute('aria-checked') === 'true';
+    const indicator = document.getElementById('indicator-power');
+
     try {
-        await api('POST', '/api/power/on');
-        document.getElementById('status-message').textContent = 'Turning on...';
-        setTimeout(refreshStatus, 2000);
+        if (isOn) {
+            await api('POST', '/api/power/off');
+            if (indicator) indicator.classList.add('flashing');
+            setTimeout(refreshStatus, 1000);
+        } else {
+            await api('POST', '/api/power/on');
+            if (indicator) indicator.classList.add('flashing');
+            setTimeout(refreshStatus, 2000);
+        }
     } catch (error) {
-        alert('Failed to turn on: ' + error.message);
+        alert('Failed to toggle power: ' + error.message);
     }
 }
 
-async function powerOff() {
+async function toggleBurner2() {
+    const toggle = document.getElementById('burner2-toggle');
+    const isOn = toggle.getAttribute('aria-checked') === 'true';
+
     try {
-        await api('POST', '/api/power/off');
-        document.getElementById('status-message').textContent = 'Turning off...';
-        setTimeout(refreshStatus, 1000);
+        if (isOn) {
+            await api('POST', '/api/burner2/off');
+        } else {
+            await api('POST', '/api/burner2/on');
+        }
+        setTimeout(refreshStatus, 500);
     } catch (error) {
-        alert('Failed to turn off: ' + error.message);
+        alert('Failed to toggle burner 2: ' + error.message);
     }
 }
 
-// Flame level
+// ==========================================
+// Flame Level
+// ==========================================
+
 function updateFlameDisplay(value) {
     document.getElementById('flame-value').textContent = value;
     // Update pixel fireplace flames in real-time as slider moves
@@ -168,26 +286,10 @@ async function setFlameLevel(level) {
     }
 }
 
-// Burner 2
-async function burner2On() {
-    try {
-        await api('POST', '/api/burner2/on');
-        setTimeout(refreshStatus, 500);
-    } catch (error) {
-        alert('Failed to enable burner 2: ' + error.message);
-    }
-}
-
-async function burner2Off() {
-    try {
-        await api('POST', '/api/burner2/off');
-        setTimeout(refreshStatus, 500);
-    } catch (error) {
-        alert('Failed to disable burner 2: ' + error.message);
-    }
-}
-
+// ==========================================
 // API Keys
+// ==========================================
+
 async function loadApiKeys() {
     const container = document.getElementById('api-keys-list');
     if (!container) return;  // API keys not enabled
@@ -263,7 +365,10 @@ function copyKey() {
     });
 }
 
+// ==========================================
 // Helpers
+// ==========================================
+
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;

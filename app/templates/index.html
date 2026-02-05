@@ -7,22 +7,37 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Vulcan</h1>
-            {% if user %}
-            <div class="user-info">
-                {% if user.picture %}
-                <img src="{{ user.picture }}" alt="Profile" class="avatar">
-                {% endif %}
-                <span>{{ user.name or user.email }}</span>
-                <form action="/auth/logout" method="post" class="logout-form">
-                    <button type="submit" class="btn btn-small">Logout</button>
-                </form>
+    {% if user %}
+    <nav class="top-bar">
+        <div class="top-bar-inner">
+            <div class="brand">
+                <svg class="brand-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2C14 2 8 10 8 16C8 19.3 10.7 22 14 22C17.3 22 20 19.3 20 16C20 10 14 2 14 2Z" fill="#ff6b35" opacity="0.9"/>
+                    <path d="M14 8C14 8 10.5 13 10.5 17C10.5 18.9 12.1 20.5 14 20.5C15.9 20.5 17.5 18.9 17.5 17C17.5 13 14 8 14 8Z" fill="#ff8c42"/>
+                    <path d="M14 13C14 13 12 15.5 12 17.5C12 18.6 12.9 19.5 14 19.5C15.1 19.5 16 18.6 16 17.5C16 15.5 14 13 14 13Z" fill="#ffd700"/>
+                </svg>
+                <span class="brand-name">Vulcan</span>
             </div>
-            {% endif %}
-        </header>
+            <div class="user-menu-wrapper">
+                <button class="user-menu-toggle" id="user-menu-toggle" aria-expanded="false" aria-haspopup="true">
+                    {% if user.picture %}
+                    <img src="{{ user.picture }}" alt="Profile">
+                    {% else %}
+                    <span class="initials">{{ (user.name or user.email)[:2] | upper }}</span>
+                    {% endif %}
+                </button>
+                <div class="user-dropdown" id="user-dropdown">
+                    <div class="dropdown-name">{{ user.name or user.email }}</div>
+                    <form action="/auth/logout" method="post" style="margin:0;">
+                        <button type="submit" class="dropdown-item">Log out</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
 
+    <div class="container">
         {% if not user %}
         <div class="login-section">
             <p>Sign in to control your fireplace</p>
@@ -75,21 +90,33 @@
         <div class="status-section" id="status-section">
             <h2>Status</h2>
             <div class="status-grid">
-                <div class="status-item">
-                    <span class="label">Power</span>
-                    <span class="value" id="status-power">--</span>
+                <div class="status-item" id="status-item-power">
+                    <span class="status-indicator" id="indicator-power"></span>
+                    <div class="status-text">
+                        <span class="label">Power</span>
+                        <span class="value" id="status-power">--</span>
+                    </div>
                 </div>
-                <div class="status-item">
-                    <span class="label">Flame Level</span>
-                    <span class="value" id="status-flame">--</span>
+                <div class="status-item" id="status-item-flame">
+                    <span class="status-indicator" id="indicator-flame"></span>
+                    <div class="status-text">
+                        <span class="label">Flame Level</span>
+                        <span class="value" id="status-flame">--</span>
+                    </div>
                 </div>
-                <div class="status-item">
-                    <span class="label">Burner 2</span>
-                    <span class="value" id="status-burner2">--</span>
+                <div class="status-item" id="status-item-burner2">
+                    <span class="status-indicator" id="indicator-burner2"></span>
+                    <div class="status-text">
+                        <span class="label">Burner 2</span>
+                        <span class="value" id="status-burner2">--</span>
+                    </div>
                 </div>
-                <div class="status-item">
-                    <span class="label">Pilot</span>
-                    <span class="value" id="status-pilot">--</span>
+                <div class="status-item" id="status-item-pilot">
+                    <span class="status-indicator" id="indicator-pilot"></span>
+                    <div class="status-text">
+                        <span class="label">Pilot</span>
+                        <span class="value" id="status-pilot">--</span>
+                    </div>
                 </div>
             </div>
             <p class="status-message" id="status-message"></p>
@@ -100,23 +127,29 @@
 
             <div class="control-group">
                 <label>Power</label>
-                <div class="btn-group">
-                    <button class="btn btn-on" onclick="powerOn()">Turn On</button>
-                    <button class="btn btn-off" onclick="powerOff()">Turn Off</button>
+                <div class="toggle-wrapper">
+                    <button class="toggle-switch" id="power-toggle" role="switch"
+                            aria-checked="false" onclick="togglePower()">
+                        <span class="toggle-knob"></span>
+                    </button>
+                    <span class="toggle-label" id="power-toggle-label">OFF</span>
                 </div>
             </div>
 
             <div class="control-group">
                 <label>Flame Level: <span id="flame-value">50</span>%</label>
-                <input type="range" id="flame-slider" min="0" max="100" value="50"
+                <input type="range" id="flame-slider" class="flame-slider" min="0" max="100" value="50"
                        oninput="updateFlameDisplay(this.value)" onchange="setFlameLevel(this.value)">
             </div>
 
             <div class="control-group">
                 <label>Burner 2</label>
-                <div class="btn-group">
-                    <button class="btn" onclick="burner2On()">Enable</button>
-                    <button class="btn" onclick="burner2Off()">Disable</button>
+                <div class="toggle-wrapper">
+                    <button class="toggle-switch" id="burner2-toggle" role="switch"
+                            aria-checked="false" onclick="toggleBurner2()">
+                        <span class="toggle-knob"></span>
+                    </button>
+                    <span class="toggle-label" id="burner2-toggle-label">OFF</span>
                 </div>
             </div>
         </div>
