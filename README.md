@@ -59,7 +59,7 @@ vulcan/
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/yourusername/vulcan.git
+git clone https://github.com/ggreenland/vulcan.git
 cd vulcan
 python3 -m venv venv
 source venv/bin/activate
@@ -155,6 +155,7 @@ Visit `https://yourdomain.duckdns.org` and sign in with Google.
 | `SECRET_KEY` | Yes | - | Session signing key (32+ chars) |
 | `ALLOWED_EMAILS` | Yes | - | Comma-separated allowed emails |
 | `BASE_URL` | Yes | - | Public URL (e.g., `https://example.com`) |
+| `FIREPLACE_CONTROLLER` | No | `real` | `real` for hardware, `simulated` for local testing |
 | `DEV_MODE` | No | `false` | Enable `/test/*` endpoints (no auth) |
 | `ENABLE_API_KEYS` | No | `false` | Enable API key management |
 
@@ -189,12 +190,13 @@ With API keys enabled, all `/api/*` endpoints also accept `X-API-Key` header.
 ### Local Testing
 
 ```bash
-# Enable test endpoints
-export DEV_MODE=true
-
-# Run with auto-reload
 source venv/bin/activate
-uvicorn app.main:app --reload --port 8000
+
+# Run with simulated fireplace (no hardware needed)
+FIREPLACE_CONTROLLER=simulated uvicorn app.main:app --reload --port 8001
+
+# Or with real fireplace and test endpoints enabled
+DEV_MODE=true uvicorn app.main:app --reload --port 8000
 ```
 
 Test endpoints (DEV_MODE only):
