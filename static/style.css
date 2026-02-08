@@ -78,18 +78,10 @@ body {
     border-color: rgba(255, 107, 53, 0.6);
 }
 
-.user-menu-toggle img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.user-menu-toggle .initials {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #fff;
-    line-height: 1;
+.user-menu-toggle .avatar-icon {
+    width: 22px;
+    height: 22px;
+    color: #aaa;
 }
 
 .user-dropdown {

@@ -20,11 +20,10 @@
             </div>
             <div class="user-menu-wrapper">
                 <button class="user-menu-toggle" id="user-menu-toggle" aria-expanded="false" aria-haspopup="true">
-                    {% if user.picture %}
-                    <img src="{{ user.picture }}" alt="Profile">
-                    {% else %}
-                    <span class="initials">{{ (user.name or user.email)[:2] | upper }}</span>
-                    {% endif %}
+                    <svg class="avatar-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="8" r="4"/>
+                        <path d="M20 21v-2c0-2.21-3.58-4-8-4s-8 1.79-8 4v2"/>
+                    </svg>
                 </button>
                 <div class="user-dropdown" id="user-dropdown">
                     <div class="dropdown-name">{{ user.name or user.email }}</div>
